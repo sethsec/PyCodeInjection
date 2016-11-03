@@ -39,11 +39,11 @@ class pyinject:
             if (param2):
                 y = eval(param2)
             if (cookie1):
-                z = eval(eval(cookie1))
+                z = eval(cookie1)
             reportStr = reportSIO.getvalue()
             #restore sys.stdout so we can print
             sys.stdout = stdout
-            output = str(reportStr) + str(x)
+            output = str(reportStr) + str(cookie1)
             return output
         except Exception as error: 
             print(error)
@@ -63,11 +63,13 @@ class pyinject:
                 web.setcookie('c1','exploit', expires="", domain=None, secure=False)     
 
             if (param1):                
-                x = eval(param1)                
+                x = eval(param1)
+            else:
+                x = None                                
             if (param2):                
                 y = eval(param2)
             if (cookie1):
-                z = eval(eval(cookie1))
+                z = eval(cookie1)
             
             reportStr = reportSIO.getvalue()
             #restore sys.stdout so we can print

