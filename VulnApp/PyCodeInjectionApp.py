@@ -15,6 +15,8 @@ urls = (
   '/', 'index',
   '/pyinject', 'pyinject'
 )
+render = web.template.render('templates/')
+app = web.application(urls, globals())
 
 class index:
     def GET(self):
@@ -23,7 +25,7 @@ class index:
         return "Hello World. Go to /pyinject for the fun"
 
 class pyinject:
-    def POST(self):
+    def POST(self):        
         eval_output = ''
         #redir sys.stdout, from https://joecodeswell.wordpress.com/2012/07/28/378/
         stdout = sys.stdout
@@ -62,12 +64,14 @@ class pyinject:
             sys.stdout = stdout
             
             output = str(reportStr) + str(eval_output)
-            return output
+            #return output
+            return render.index(output)
         except Exception as error: 
             print(error)
             return error
 
     def GET(self):
+        
         eval_output = ''
         #redir sys.stdout, from https://joecodeswell.wordpress.com/2012/07/28/378/
         stdout = sys.stdout
@@ -106,8 +110,8 @@ class pyinject:
             #restore sys.stdout so we can print
             sys.stdout = stdout
             output = str(reportStr) + str(eval_output)
-            return output
-            
+            #return output
+            return render.index(output)
         except Exception as error: 
             print(error)
             return error
@@ -115,5 +119,5 @@ class pyinject:
     
 if __name__ == "__main__":
     
-    app = web.application(urls, globals())
+    
     app.run()

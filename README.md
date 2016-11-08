@@ -3,7 +3,9 @@
 The PyCodeInjection project contains two main components:
 
 1. **PyCodeInjectionShell** - A tool to exploit web application based Python Code Injection
-2. **PyCodeInjhectionApp**  - A web application that is intentially vulnerable to Python Code Injection 
+2. **PyCodeInjectionApp**  - A web application that is intentially vulnerable to Python Code Injection 
+
+For a more in depth background on what Python Code Injection you can read [this post](http://sethsec.blogspot.com/2016/11/exploiting-python-code-injection-in-web.html)
 
 # Installation
 ``` 
@@ -14,7 +16,7 @@ git clone https://github.com/sethsec/PyCodeInjection.git /opt/PythonCodeInjectio
 
 ```
 cd /opt/PythonCodeInjection/VulnApp
-./install_requirements.txt
+./install_requirements.sh
 ```
 
 # Usage

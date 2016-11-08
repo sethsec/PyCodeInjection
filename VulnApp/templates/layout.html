@@ -1,0 +1,16 @@
+import app
+$def with (ouput)
+
+<h1> I'm vulnerable to Python Code Injection! </h1>
+
+Vulnerable GET/POST parameters: param1,param2
+Vulnerable Cookie: c1
+
+Have fun!
+
+-@sethsec
+
+$if output:
+    Output: <br><br>'output'
+$else:
+    hi
