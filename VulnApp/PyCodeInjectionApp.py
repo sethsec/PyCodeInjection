@@ -82,7 +82,7 @@ class pyinject:
             param2 = get_input['param2'] if 'param2' in get_input else None            
             cookie1 = web.cookies().get('c1') if 'c1' in web.cookies() else None
             if not cookie1: 
-                web.setcookie('c1','exploit', expires="", domain=None, secure=False)     
+                web.setcookie('c1','exploit_me', expires="", domain=None, secure=False)     
 
             if (param1):
                 try:

