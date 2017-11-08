@@ -60,20 +60,20 @@ def parse_request(command,filename,user_param=None):
             acceptline = re.search('Accept:.*',request1)
             #print str(acceptline.group(0))
             updated = re.sub("\*",encoded, request1)
-            updated2 = re.sub('Accept:.*',str(acceptline.group(0)), updated)        
+            updated2 = re.sub('Accept:.*',str(acceptline.group(0)), updated)
             req_obj = HTTPRequest(updated2)
         else:
             print "[!] Request file and specified parameter are not currently supported together. \n[!]Please place a * in the request file\n"
             exit()
         #print updated2
+        req_obj.headers.dict.pop('content-length', None)
         url = '%s%s' % (req_obj.headers['host'],req_obj.path)
         if req_obj.command == "GET":
             #print url
             #print req_obj.headers
             return url,req_obj.headers
         elif req_obj.command == "POST":
-            content_len = int(req_obj.headers.getheader('content-length', 0))
-            post_body = req_obj.rfile.read(content_len)
+            post_body = req_obj.rfile.read()
             return url,req_obj.headers,post_body
 
 def select_command(user_url,user_param=None):
