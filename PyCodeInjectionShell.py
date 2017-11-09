@@ -71,7 +71,7 @@ def parse_request(command,filename,user_param=None):
         if req_obj.command == "GET":
             #print url
             #print req_obj.headers
-            return url,req_obj.headers
+            return url,req_obj.headers,None
         elif req_obj.command == "POST":
             post_body = req_obj.rfile.read()
             return url,req_obj.headers,post_body
